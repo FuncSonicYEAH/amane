@@ -157,7 +157,12 @@ Event-driven Services, like the D-Bus and PulseAudio ones, replace it with their
 Control calls from input handlers, like `Audio::set_volume`, go to one shared worker thread (`src/services/worker.rs`), so a slow bus never stalls drawing.
 
 `Workspaces` doesn't know which compositor is running.
-`src/compositor.rs` picks a backend from whichever of `NIRI_SOCKET`, `HYPRLAND_INSTANCE_SIGNATURE`, `SWAYSOCK` or `MANGO_INSTANCE_SIGNATURE` is set.
+`src/compositor.rs` picks a backend from whichever of `NIRI_SOCKET`, `HYPRLAND_INSTANCE_SIGNATURE`, `SWAYSOCK`, `MANGO_INSTANCE_SIGNATURE` or `UMBRIEL_SOCKET` is set.
+Every backend hands over the full workspace list after each event.
+niri only sends what changed, so its backend remembers the rest and rebuilds the list itself.
+Hyprland and Sway are just asked for the full list again.
+Mango and Umbriel send everything every time, and each Mango tag counts as a workspace.
+`Workspaces` sorts the list by monitor and position, and if nothing changed (a window title changing is also a compositor event), it writes quietly.
 
 To add a compositor, you add one file in `src/compositor/`, its environment variable in `running()`, and one arm in each of the two `match`es (`listen` and `focus_workspace`).
 
@@ -216,7 +221,7 @@ src/
 ├── dbus.rs, dbus/     a small zbus wrapper: Bus, Method, Signal, Value
 ├── ipc.rs             IpcHandlers and IpcCall
 ├── compositor.rs      picks the workspace backend for the running compositor
-├── compositor/        niri, Hyprland, Sway and Mango IPC, used by Workspaces
+├── compositor/        niri, Hyprland, Sway, Mango and Umbriel IPC, used by Workspaces
 ├── process.rs         spawn, output, lines
 ├── files.rs           watch_file, through inotify
 ├── allocator.rs       glibc allocator limits for image decoding
